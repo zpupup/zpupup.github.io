@@ -103,26 +103,27 @@
   <meta name="keywords" content="Hexo, NexT" />
 
 
-<meta name="description" content="奥义·复制粘贴加调试">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="https://zpupup.github.io/index.html">
+<meta name="description" content="每次更改完 NexT 文档 都要手动部署到 GitHub Pages，重复的次数多了就显得很麻烦，出错的几率也会变大。文档源码放置在 master 分支，最终部署文件在 gh-pages 分支。当在 master 分支更改某些内容之后，通过运行 gulp dist 来生成最终部署的 HTML 文件到 dist 目录，随后再进入 dist 目录初始化 git 仓库、添加文件、提交文件，最后将提交强制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 Travis CI 自动更新 GitHub Pages">
+<meta property="og:url" content="https://zpupup.github.io/2018/01/22/publishing-github-pages-with-travis-ci/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="奥义·复制粘贴加调试">
+<meta property="og:description" content="每次更改完 NexT 文档 都要手动部署到 GitHub Pages，重复的次数多了就显得很麻烦，出错的几率也会变大。文档源码放置在 master 分支，最终部署文件在 gh-pages 分支。当在 master 分支更改某些内容之后，通过运行 gulp dist 来生成最终部署的 HTML 文件到 dist 目录，随后再进入 dist 目录初始化 git 仓库、添加文件、提交文件，最后将提交强制">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-01-22T09:40:27.573Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hexo">
-<meta name="twitter:description" content="奥义·复制粘贴加调试">
+<meta name="twitter:title" content="使用 Travis CI 自动更新 GitHub Pages">
+<meta name="twitter:description" content="每次更改完 NexT 文档 都要手动部署到 GitHub Pages，重复的次数多了就显得很麻烦，出错的几率也会变大。文档源码放置在 master 分支，最终部署文件在 gh-pages 分支。当在 master 分支更改某些内容之后，通过运行 gulp dist 来生成最终部署的 HTML 文件到 dist 目录，随后再进入 dist 目录初始化 git 仓库、添加文件、提交文件，最后将提交强制">
 
 
 
 
 
 
-  <link rel="canonical" href="https://zpupup.github.io/"/>
+  <link rel="canonical" href="https://zpupup.github.io/2018/01/22/publishing-github-pages-with-travis-ci/"/>
 
 
-  <title>Hexo</title>
+  <title>使用 Travis CI 自动更新 GitHub Pages | Hexo</title>
   
 
 
@@ -169,8 +170,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -312,9 +312,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -346,9 +346,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/01/22/publishing-github-pages-with-travis-ci/" itemprop="url">使用 Travis CI 自动更新 GitHub Pages</a></h2>
+          <h2 class="post-title" itemprop="name headline">使用 Travis CI 自动更新 GitHub Pages</h2>
         
 
         <div class="post-meta">
@@ -397,18 +395,43 @@
       
 
       
-        
-          
-          每次更改完 NexT 文档 都要手动部署到 GitHub Pages，重复的次数多了就显得很麻烦，出错的几率也会变大。文档源码放置在 master 分支，最终部署文件在 gh-pages 分支。当在 master 分支更改某些内容之后，通过运行 gulp dist 来生成最终部署的 HTML 文件到
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/01/22/publishing-github-pages-with-travis-ci/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
+        <p>每次更改完 NexT 文档 都要手动部署到 GitHub Pages，重复的次数多了就显得很麻烦，出错的几率也会变大。文档源码放置在 master 分支，最终部署文件在 gh-pages 分支。当在 master 分支更改某些内容之后，通过运行 gulp dist 来生成最终部署的 HTML 文件到 dist 目录，随后再进入 dist 目录初始化 git 仓库、添加文件、提交文件，最后将提交强制推送到远程 gh-pages 分支（因当心我会误将最终部署的 HTML 文件提交到 master 分支导致源码丢失，我在 GitHub 上把 master 分支给锁定了）。除此之外还有另外一个问题：如果 master 分支有 Pull Requests，我需要先将更新取回本地，然后编译更新再提交回远程 gh-pages 分支。</p>
+<p>年轻的想法<br>于是，我就想这说将这个过程自动化。首先考虑了使用 GitHub Webhooks，这是 Github 提供的一种机制，使应用能与 Github 通讯。这种机制实际上就是 Pub/Sub，当 Github 监测到资源（如仓库）有变化就往预先设定的 URL 发送一个 POST 请求（Pub），告知变化情况，而后接收变化的服务器（Sub）即可做一些额外的事情。</p>
+<p>这个思路需要有一个服务器并启动一个服务来接收 Github 的请求。这里又有种不同的策略，这两种策略都是基于源码放置在 Github 的前提。第一个是源码将最终文档直接部署在这台服务器上（如使用 Nginx），当接收到 Github 通知直接编译更新到服务器指定的文件夹下即可。另一种策略是当服务器接收到通知后编译更新，而后将编译后的版本提交到 Github 仓库的 gh-pages 分支，让 Github 做 Host。</p>
+<p>Travis CI 登场<br>由于比较穷，租不起服务器（果然有点年轻），于是就想说有没有免费的方案可以用。于是就惦记起各种 CI 服务，本着够用就好少折腾的原则直接选了 Travis CI，对外宣称是免费的还要求那么多不是太合适，其实本质是读英文文档嫌累π_π。没有折腾精神的开发不是一个好开发，这能怪我么，好吧，确实是我的错，我太穷了。</p>
+<p>Poor Guy</p>
+<p>那么，终归是找到了解决方案。有了持续构建系统，就可以做到有更新自动 Build，意味着就可以多看两集韩国噢八剧，一集英国基情剧，N 集日本爱情剧以及英雄联盟。那么预想的整个流程就是 ：</p>
+<p>更新代码到 Github<br>Github 跑去告诉 Travis CI 说有个东西变了<br>Travis CI 勃然大怒、立马安排 Build<br>Travis CI build 成功后，将输出丢到 Github gh-pages 分支<br>Github build Pages<br>领盒饭收工<br>非常 Easy，哪里不会去 Google！</p>
+<p>那些年的那些坑<br>接下来就是实际动手了。注册 Travis CI，Github 集成 Travis CI ，Travis CI 为特定的仓库变动自动 Build 这些事情就是像个 Boss 一样点点鼠标就行了。问题就在于最后一步，怎么让 Travis CI 往 Github 提交代码呢？将 Github 帐号信息写在 .travis.yml 文件里毕竟是一个太过年轻的做法。然后我找到了 Hexo 作者 SkyArrow的这篇文章，通篇看下来，我长嘘了一口气在想要不就老老实实手动编译更新吧。然而，就在我长嘘短叹人生之艰难的时候，突然发现 Travis CI 除了支持 加密文件 也支持 加密 Token Key。于是，事情有了转机。</p>
+<p>另一种方案<br>这种方案不再使用 RSA 加密算法去生成一对密钥，取而代之的是 Github 提供的 Personal Access Token。这个 Token 与 帐号密码 以及 SSH Keys 同样具有 Github 写入能力，因此只要使用 Travis CI 提供的加密工具来加密这个 Token 即可。</p>
+<p>方案原理<br>根据 Travis CI 的文档，他会使用一对 Key Pair 中的 Public Key 来加密你提供的 Token 得到一个 Secure Token（这个 Secure Token 可以安全地放置在 .travis.yml 中），而在 Build 的时候他会使用 Private Key 来解密这个 Secure Token 获取最初提供的 Github Personal Access Token，见下图：</p>
+<p>Travis CI - Encrypt Keys</p>
+<p>具体操作<br>了解了背后的原理就可以大胆地去着手实现。按照原理来讲，大致需要三个步骤，第一获取 GitHub Personal Access Token；第二使用 Travis CI 的工具加密这个 Token，并保存到 .travis.yml 文件中；第三配置文件使用 Access Token。具体的操作步骤如下：</p>
+<p>生成一个 Github Personal Access Token。前往 Github 帐号 Settings 页面，在左侧选择 Personal Access Token，然后在右侧面板点击 “Generate new token” 来新建一个 Token。需要注意的是，创建完的 Token 只有第一次可见，之后再访问就无法看见（只能看见他的名称），因此要保存好这个值。</p>
+<p>使用 Travis CI 的 命令行工具 加密 GitHub 的 Personal Access Token。这个工具是一个 gem 包，因此需要 Ruby 环境。假设已经安装好 Ruby 环境，即可安装 Travis CI 的命令行工具，以及加密：</p>
+<p>1<br>2<br>3<br>4<br>5</p>
+<h1 id="安装-Travis-CI-命令行工具"><a href="#安装-Travis-CI-命令行工具" class="headerlink" title="安装 Travis CI 命令行工具"></a>安装 Travis CI 命令行工具</h1><p>gem install travis</p>
+<h1 id="加密-Personal-Access-Token"><a href="#加密-Personal-Access-Token" class="headerlink" title="加密 Personal Access Token"></a>加密 Personal Access Token</h1><p>travis encrypt -r iissnan/theme-next-docs GH_TOKEN=XXX<br>第二条命令中 -r 后的参数是 GitHub 仓库的名字（&lt;用户名&gt;/&lt;仓库名&gt;）；GH_TOKEN 将作为环境变量使用。将这条命令输出的结果复制到 .travis.yml 文件下：</p>
+<p>1<br>2<br>3<br>4<br>env:<br>  global:</p>
+<pre><code>- GH_REF: github.com/iissnan/theme-next-docs.git
+- secure: &quot;XXXXXX&quot;
+</code></pre><p>这个设置之中包含了 仓库的地址（设置在 GH_REF 环境变量中）以及 Access Token （被加密了，设置在 GH_TOKEN 环境变量中）。这两个环境变量将 Build 的时候被使用，用于往 GitHub gh-pages 分支推送。</p>
+<p>让 Travis CI 往 Github 仓库的 gh-pages 分支提交。根据需求的不同，这里的配置也不尽相同，但重要的是如何使用 GH_REF 和 GH_TOKEN 这两个环境变量。NexT 文档是执行 gulp dist 来生成最终的 HTML文件，然后推送到 GitHub Pages，其配置如下：</p>
+<p>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19</p>
+<h1 id="S-Build-Lifecycle"><a href="#S-Build-Lifecycle" class="headerlink" title="S: Build Lifecycle"></a>S: Build Lifecycle</h1><p>install:</p>
+<ul>
+<li>npm install<br>before_script:</li>
+<li>npm install -g gulp<br>script:</li>
+<li>gulp dist<br>after_script:</li>
+<li>cd dist</li>
+<li>git init</li>
+<li>git config user.name “iissnan”</li>
+<li>git config user.email “email_address”</li>
+<li>git add .</li>
+<li>git commit -m “Update docs”</li>
+<li>git push -f “<a href="https://${GH_TOKEN}@${GH_REF}" target="_blank" rel="noopener">https://${GH_TOKEN}@${GH_REF}</a>“ master:gh-pages<h1 id="E-Build-LifeCycle"><a href="#E-Build-LifeCycle" class="headerlink" title="E: Build LifeCycle"></a>E: Build LifeCycle</h1>到此，整个流程就结束了。NexT 文档使用的配置在 这里，有需要的可以参考下。</li>
+</ul>
+
       
     </div>
     
@@ -425,139 +448,28 @@
       
 
       
-
-      
-
       
       
-        <div class="post-eof"></div>
+
       
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zpupup.github.io/2018/01/19/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="zp">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/01/19/hello-world/" itemprop="url">Hello World</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-19T17:00:48+08:00">2018-01-19</time>
+              <a href="/2018/01/19/hello-world/" rel="next" title="Hello World">
+                <i class="fa fa-chevron-left"></i> Hello World
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-          Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in 
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/01/19/hello-world/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -567,14 +479,19 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
           
+
+  
+
+
 
         </div>
         
@@ -595,8 +512,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -645,6 +571,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#安装-Travis-CI-命令行工具"><span class="nav-number">1.</span> <span class="nav-text">安装 Travis CI 命令行工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#加密-Personal-Access-Token"><span class="nav-number">2.</span> <span class="nav-text">加密 Personal Access Token</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#S-Build-Lifecycle"><span class="nav-number">3.</span> <span class="nav-text">S: Build Lifecycle</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#E-Build-LifeCycle"><span class="nav-number">4.</span> <span class="nav-text">E: Build LifeCycle</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -792,6 +734,10 @@
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.0.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.0.2"></script>
+
+
 
   
 
